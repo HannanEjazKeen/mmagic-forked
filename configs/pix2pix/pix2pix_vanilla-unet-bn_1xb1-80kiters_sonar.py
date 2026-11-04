@@ -22,7 +22,7 @@ train_cfg = dict(max_iters=80000)
 
 # dataset settings
 # expects data/pix2pix/sonar/{train,val,test}/*.png, each a [sonar | mask] pair
-dataroot = 'data/pix2pix/sonar'
+dataroot = '/mnt/data/water-data/underwater/marine-debris/watertank-segmentation/paired'
 train_pipeline = _base_.train_dataloader.dataset.pipeline
 val_pipeline = _base_.val_dataloader.dataset.pipeline
 test_pipeline = _base_.test_dataloader.dataset.pipeline
@@ -81,7 +81,7 @@ default_hooks = dict(checkpoint=dict(save_best='FID-Full/fid', rule='less'))
 # evaluated. The val_evaluator runs on val/ and the test_evaluator on test/,
 # so keep your val/ and test/ counts equal (equal --val-ratio / --test-ratio
 # in tools/make_paired_sonar.py), or split this into two values.
-fake_nums = 106
+fake_nums = 187
 metrics = [
     dict(
         type='TransIS',
