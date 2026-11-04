@@ -66,7 +66,15 @@ def register_diffusers_models() -> List[str]:
 
     DIFFUSERS_PIPELINES = []
     for pipeline_name in dir(diffusers.pipelines):
-        pipeline = getattr(diffusers.pipelines, pipeline_name)
+        try:
+            pipeline = getattr(diffusers.pipelines, pipeline_name)
+        except (ImportError, RuntimeError, AttributeError) as e:
+            warnings.warn(
+                f'Skipping unavailable Diffusers pipeline '
+                f'{pipeline_name}: {e}'
+            )
+            continue
+
         if (inspect.isclass(pipeline)
                 and issubclass(pipeline, diffusers.DiffusionPipeline)):
             wrapped_pipeline = gen_wrapped_cls(pipeline, pipeline_name)
