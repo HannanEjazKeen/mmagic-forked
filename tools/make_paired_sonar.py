@@ -1,21 +1,23 @@
 # Copyright (c) OpenMMLab. All rights reserved.
 """Build a pix2pix paired dataset from separate sonar images and binary masks.
 
-Each output file is a single image with the mask on the LEFT and the sonar
-image on the RIGHT: ``[mask | sonar]`` (A|B, concatenated along the width).
-This matches the ``domain_a=mask`` / ``domain_b=sonar`` convention used by
-``configs/pix2pix/pix2pix_vanilla_unet_bn_sonar_b1x1_80k.py``.
+Each output file is a single image with the sonar image on the LEFT and the
+mask on the RIGHT: ``[sonar | mask]`` (A|B, concatenated along the width).
+This matches the ``domain_a=sonar`` / ``domain_b=mask`` convention used by
+``configs/pix2pix/pix2pix_vanilla-unet-bn_1xb1-80kiters_sonar.py`` (mmagic),
+where the generator takes the mask and produces the sonar image.
 
 Pairs are matched by filename stem: ``sonar/0001.png`` <-> ``masks/0001.png``.
-The matched pairs are shuffled and split into ``train/`` and ``test/``.
+The matched pairs are shuffled and split into ``train/``, ``val/`` and
+``test/``.
 
 Example
 -------
 python tools/make_paired_sonar.py \
     --sonar-dir /path/to/sonar_images \
     --mask-dir  /path/to/binary_masks \
-    --out-dir   data/paired/sonar \
-    --size 256 --test-ratio 0.1 --seed 0
+    --out-dir   data/pix2pix/sonar \
+    --size 256 --val-ratio 0.1 --test-ratio 0.1 --seed 0
 """
 import argparse
 import os
@@ -31,14 +33,14 @@ IMG_EXTS = ('.png', '.jpg', '.jpeg', '.bmp', '.tif', '.tiff')
 
 def parse_args():
     parser = argparse.ArgumentParser(
-        description='Make a pix2pix [mask|sonar] paired dataset.')
+        description='Make a pix2pix [sonar|mask] paired dataset.')
     parser.add_argument(
         '--sonar-dir', required=True, help='folder of sonar images')
     parser.add_argument(
         '--mask-dir', required=True, help='folder of binary masks')
     parser.add_argument(
         '--out-dir',
-        default='data/paired/sonar',
+        default='data/pix2pix/sonar',
         help='output dataroot; train/, val/ and test/ are created inside it')
     parser.add_argument(
         '--size',
@@ -120,14 +122,15 @@ def main():
             mask_img = to_3ch(mmcv.imread(masks[stem], flag='color'))
             sonar_img = mmcv.imresize(sonar_img, size)
             mask_img = mmcv.imresize(mask_img, size)
-            # A|B = mask | sonar  (domain_a | domain_b)
-            pair = np.concatenate([mask_img, sonar_img], axis=1)
+            # A|B = sonar | mask  (domain_a | domain_b)
+            pair = np.concatenate([sonar_img, mask_img], axis=1)
             mmcv.imwrite(pair, osp.join(out_phase, f'{stem}.png'))
 
     print(f'\nDone. train={len(split["train"])}  val={len(split["val"])}  '
           f'test={len(split["test"])}')
-    print(f'Set `num_images = {len(split["val"])}` in the pix2pix config '
-          f'(the val split is what the training-time eval hook uses).')
+    print(f'Set `fake_nums = {len(split["val"])}` in the pix2pix config '
+          f'(val_evaluator runs on val/; keep test/ the same size, or set a '
+          f'separate fake_nums for the test_evaluator).')
 
 
 if __name__ == '__main__':
