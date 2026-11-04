@@ -6,8 +6,9 @@ _base_ = [
 # deterministic training can improve the performance of Pix2Pix
 randomness = dict(deterministic=True)
 
-# A = SONAR image (what we want to generate), B = semantic label map (input)
-source_domain = domain_b = 'label'
+# A = SONAR image (what we want to generate), B = binary mask (input).
+# Each paired file is [sonar | mask] = [A | B] (concatenated along width).
+source_domain = domain_b = 'mask'
 target_domain = domain_a = 'sonar'
 
 # model settings
@@ -20,7 +21,7 @@ model = dict(
 train_cfg = dict(max_iters=80000)
 
 # dataset settings
-# expects data/pix2pix/sonar/{train,test}/*.png, each a side-by-side A|B pair
+# expects data/pix2pix/sonar/{train,val,test}/*.png, each a [sonar | mask] pair
 dataroot = 'data/pix2pix/sonar'
 train_pipeline = _base_.train_dataloader.dataset.pipeline
 val_pipeline = _base_.val_dataloader.dataset.pipeline
@@ -46,8 +47,12 @@ val_pipeline += [key_mapping, pack_input]
 test_pipeline += [key_mapping, pack_input]
 
 train_dataloader = dict(dataset=dict(data_root=dataroot))
-val_dataloader = dict(dataset=dict(data_root=dataroot, test_mode=True))
-test_dataloader = val_dataloader
+# val/ is read during training by the eval hook (model selection).
+val_dataloader = dict(
+    dataset=dict(data_root=dataroot, test_mode=True, test_dir='val'))
+# test/ is the held-out split used by tools/test.py.
+test_dataloader = dict(
+    dataset=dict(data_root=dataroot, test_mode=True, test_dir='test'))
 
 # optimizer
 optim_wrapper = dict(
@@ -72,7 +77,10 @@ custom_hooks = [
 # save multi best checkpoints
 default_hooks = dict(checkpoint=dict(save_best='FID-Full/fid', rule='less'))
 
-# NOTE: set fake_nums to the number of images in your test set
+# NOTE: fake_nums must match the number of images in the split being
+# evaluated. The val_evaluator runs on val/ and the test_evaluator on test/,
+# so keep your val/ and test/ counts equal (equal --val-ratio / --test-ratio
+# in tools/make_paired_sonar.py), or split this into two values.
 fake_nums = 106
 metrics = [
     dict(
