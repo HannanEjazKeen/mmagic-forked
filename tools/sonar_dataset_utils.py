@@ -27,6 +27,7 @@ from glob import glob
 
 import mmcv
 import numpy as np
+from mmengine.utils import track_iter_progress
 
 IMG_EXTS = ('.png', '.jpg', '.jpeg', '.bmp', '.tif', '.tiff')
 
@@ -88,7 +89,7 @@ def build_dataset(out_dir, split, loader, size):
         for d in (img_dir, mask_dir, pair_dir):
             os.makedirs(d, exist_ok=True)
 
-        for stem in mmcv.track_iter_progress(phase_stems):
+        for stem in track_iter_progress(phase_stems):
             sonar_img, mask_img = loader(stem)
             # sonar: smooth interpolation; mask: nearest to stay binary/crisp.
             sonar_img = mmcv.imresize(sonar_img, hw)

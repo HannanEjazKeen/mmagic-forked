@@ -26,6 +26,7 @@ python tools/make_paired_uatd.py \
 import argparse
 import os.path as osp
 import xml.etree.ElementTree as ET
+from glob import glob
 
 import mmcv
 import numpy as np
@@ -80,9 +81,9 @@ def parse_args():
 def index_xml_by_stem(folder):
     """Map filename-stem -> full path for every .xml in a folder."""
     mapping = {}
-    for name in sorted(mmcv.scandir(folder, suffix='.xml', recursive=False)):
-        stem = osp.splitext(osp.basename(name))[0]
-        mapping[stem] = osp.join(folder, name)
+    for path in sorted(glob(osp.join(folder, '*.xml'))):
+        stem = osp.splitext(osp.basename(path))[0]
+        mapping[stem] = path
     return mapping
 
 
