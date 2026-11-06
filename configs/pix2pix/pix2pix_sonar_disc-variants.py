@@ -54,6 +54,14 @@ _DISCRIMINATORS = {
     'patchgan70': dict(type='PatchDiscriminator', num_conv=3, **_disc_common),
     'imagegan': dict(type='PatchDiscriminator', num_conv=5, **_disc_common),
 }
+# actual receptive field per variant, folded into the work_dir name so the
+# folder itself records it (no extra logging needed).
+_RECEPTIVE_FIELD = {
+    'pixelgan': 1,
+    'patchgan16': 16,
+    'patchgan70': 70,
+    'imagegan': 286,
+}
 
 assert DATASET in _DATASETS, f'unknown DATASET {DATASET!r}'
 assert DISCRIMINATOR in _DISCRIMINATORS, \
@@ -72,8 +80,10 @@ model = dict(
 
 train_cfg = dict(max_iters=80000)
 
-# keep each of the 8 runs in its own directory
-work_dir = f'./work_dirs/pix2pix_{DATASET}_{DISCRIMINATOR}'
+# keep each of the 8 runs in its own directory; the folder name carries the
+# dataset, discriminator and its receptive field (e.g. ..._patchgan70_rf70).
+work_dir = (f'./work_dirs/pix2pix_{DATASET}_{DISCRIMINATOR}'
+            f'_rf{_RECEPTIVE_FIELD[DISCRIMINATOR]}')
 
 # ---- pipeline wiring ------------------------------------------------------
 train_pipeline = _base_.train_dataloader.dataset.pipeline
@@ -150,3 +160,9 @@ metrics = [
 
 val_evaluator = dict(metrics=metrics)
 test_evaluator = dict(metrics=metrics)
+
+# real-time visualization: add TensorBoard alongside the default local backend.
+# View live loss/FID/IS curves and sample images with:
+#   tensorboard --logdir work_dirs
+vis_backends = [dict(type='VisBackend'), dict(type='TensorboardVisBackend')]
+visualizer = dict(type='Visualizer', vis_backends=vis_backends)
