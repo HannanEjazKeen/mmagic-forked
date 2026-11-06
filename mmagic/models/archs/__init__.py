@@ -17,6 +17,7 @@ from .lora import (LoRAWrapper, set_lora, set_lora_disable, set_lora_enable,
                    set_only_lora_trainable)
 from .multi_layer_disc import MultiLayerDiscriminator
 from .patch_disc import PatchDiscriminator
+from .pixel_disc import PixelDiscriminator
 from .resnet import ResNet
 from .separable_conv_module import DepthwiseSeparableConvModule
 from .simple_encoder_decoder import SimpleEncoderDecoder
@@ -92,6 +93,7 @@ __all__ = [
     'LinearModule', 'pixel_unshuffle', 'PixelShufflePack', 'ImgNormalize',
     'SpatialTemporalEnsemble', 'SoftMaskPatchDiscriminator',
     'SimpleEncoderDecoder', 'MultiLayerDiscriminator', 'PatchDiscriminator',
+    'PixelDiscriminator',
     'VGG16', 'ResNet', 'AllGatherLayer', 'ResidualBlockNoBN', 'LoRAWrapper',
     'set_lora', 'set_lora_disable', 'set_lora_enable',
     'set_only_lora_trainable', 'TokenizerWrapper', 'AttentionInjection'
