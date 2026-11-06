@@ -3,28 +3,79 @@ _base_ = [
     '../_base_/datasets/paired_imgs_256x256_crop.py',
     '../_base_/gen_default_runtime.py'
 ]
+
+# ===========================================================================
+# EXPERIMENT SELECTORS -- edit just these two to pick a run.
+#   DATASET:       'marine_debris' | 'uatd'
+#   DISCRIMINATOR: 'pixelgan' | 'patchgan16' | 'patchgan70' | 'imagegan'
+# The 4 discriminators x 2 datasets give the 8 runs from the paper, each
+# written to its own work_dir so they never overwrite each other.
+# ===========================================================================
+DATASET = 'marine_debris'
+DISCRIMINATOR = 'patchgan70'
+# ===========================================================================
+
 # deterministic training can improve the performance of Pix2Pix
 randomness = dict(deterministic=True)
 
-# A = SONAR image (what we want to generate), B = binary mask (input).
+# A = SONAR image (what we generate), B = binary mask (input).
 # Each paired file is [sonar | mask] = [A | B] (concatenated along width).
 source_domain = domain_b = 'mask'
 target_domain = domain_a = 'sonar'
 
-# model settings
+# ---- dataset table --------------------------------------------------------
+# `dataroot` points at the `paired/` folder written by tools/make_paired_*.py.
+# `fake_nums` MUST equal the number of images in the evaluated split (val/);
+# set it to the count the pairing script printed. Keep val/ and test/ equal in
+# size, or give val_evaluator / test_evaluator separate fake_nums.
+_DATASETS = {
+    'marine_debris': dict(
+        dataroot='/mnt/data/water-data/underwater/marine-debris/'
+        'watertank-segmentation/paired',
+        fake_nums=187),  # TODO: set to your marine-debris val count
+    'uatd': dict(
+        dataroot='data/pix2pix/uatd/paired',
+        fake_nums=187),  # TODO: set to your UATD val count
+}
+
+# ---- discriminator table --------------------------------------------------
+# Receptive field is set by the discriminator depth. For PatchDiscriminator in
+# this repo, num_conv == pix2pix n_layers, and the field (on 256px input) is:
+#   num_conv=1 -> 16x16,  num_conv=3 -> 70x70,  num_conv=5 -> 286x286 (>=image).
+# PixelGAN (1x1) needs the dedicated 1x1 PixelDiscriminator (all stride-1
+# kernel-1 convs); PatchDiscriminator cannot go below 16x16.
+# in_channels=6 = concat(sonar 3ch, mask 3ch).
+_disc_common = dict(
+    in_channels=6, base_channels=64, norm_cfg=dict(type='BN'),
+    init_cfg=dict(type='normal', gain=0.02))
+_DISCRIMINATORS = {
+    'pixelgan': dict(type='PixelDiscriminator', **_disc_common),
+    'patchgan16': dict(type='PatchDiscriminator', num_conv=1, **_disc_common),
+    'patchgan70': dict(type='PatchDiscriminator', num_conv=3, **_disc_common),
+    'imagegan': dict(type='PatchDiscriminator', num_conv=5, **_disc_common),
+}
+
+assert DATASET in _DATASETS, f'unknown DATASET {DATASET!r}'
+assert DISCRIMINATOR in _DISCRIMINATORS, \
+    f'unknown DISCRIMINATOR {DISCRIMINATOR!r}'
+
+dataroot = _DATASETS[DATASET]['dataroot']
+fake_nums = _DATASETS[DATASET]['fake_nums']
+
+# model settings: only the discriminator changes across the 4 variants.
 model = dict(
     default_domain=target_domain,
     reachable_domains=[target_domain],
     related_domains=[target_domain, source_domain],
+    discriminator=_DISCRIMINATORS[DISCRIMINATOR],
     data_preprocessor=dict(data_keys=[f'img_{domain_a}', f'img_{domain_b}']))
 
 train_cfg = dict(max_iters=80000)
 
-# dataset settings
-# Point at the `paired/` folder written by tools/make_paired_sonar.py or
-# tools/make_paired_uatd.py; it holds {train,val,test}/*.png, each a
-# [sonar | mask] pair.
-dataroot = '/mnt/data/water-data/underwater/marine-debris/watertank-segmentation/paired'
+# keep each of the 8 runs in its own directory
+work_dir = f'./work_dirs/pix2pix_{DATASET}_{DISCRIMINATOR}'
+
+# ---- pipeline wiring ------------------------------------------------------
 train_pipeline = _base_.train_dataloader.dataset.pipeline
 val_pipeline = _base_.val_dataloader.dataset.pipeline
 test_pipeline = _base_.test_dataloader.dataset.pipeline
@@ -76,14 +127,9 @@ custom_hooks = [
         ])
 ]
 
-# save multi best checkpoints
+# save the best checkpoint by FID
 default_hooks = dict(checkpoint=dict(save_best='FID-Full/fid', rule='less'))
 
-# NOTE: fake_nums must match the number of images in the split being
-# evaluated. The val_evaluator runs on val/ and the test_evaluator on test/,
-# so keep your val/ and test/ counts equal (equal --val-ratio / --test-ratio
-# in tools/make_paired_sonar.py), or split this into two values.
-fake_nums = 187
 metrics = [
     dict(
         type='TransIS',
