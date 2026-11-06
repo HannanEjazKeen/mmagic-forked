@@ -21,7 +21,9 @@ model = dict(
 train_cfg = dict(max_iters=80000)
 
 # dataset settings
-# expects data/pix2pix/sonar/{train,val,test}/*.png, each a [sonar | mask] pair
+# Point at the `paired/` folder written by tools/make_paired_sonar.py or
+# tools/make_paired_uatd.py; it holds {train,val,test}/*.png, each a
+# [sonar | mask] pair.
 dataroot = '/mnt/data/water-data/underwater/marine-debris/watertank-segmentation/paired'
 train_pipeline = _base_.train_dataloader.dataset.pipeline
 val_pipeline = _base_.val_dataloader.dataset.pipeline
