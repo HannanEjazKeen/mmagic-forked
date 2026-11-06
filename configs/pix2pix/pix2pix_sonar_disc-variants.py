@@ -31,11 +31,11 @@ target_domain = domain_a = 'sonar'
 _DATASETS = {
     'marine_debris': dict(
         dataroot='/mnt/data/water-data/underwater/marine-debris/'
-        'watertank-segmentation/paired',
+        'watertank-segmentation/Processed/paired',
         fake_nums=187),  # TODO: set to your marine-debris val count
     'uatd': dict(
-        dataroot='data/pix2pix/uatd/paired',
-        fake_nums=187),  # TODO: set to your UATD val count
+        dataroot='/mnt/data/water-data/underwater/UATD/Processed/paired',
+        fake_nums=920),  # TODO: set to your UATD val count
 }
 
 # ---- discriminator table --------------------------------------------------
