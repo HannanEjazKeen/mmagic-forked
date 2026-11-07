@@ -109,12 +109,16 @@ train_pipeline += [key_mapping, pack_input]
 val_pipeline += [key_mapping, pack_input]
 test_pipeline += [key_mapping, pack_input]
 
-train_dataloader = dict(dataset=dict(data_root=dataroot))
+# num_workers=1 to match a single-CPU Slurm allocation (--cpus-per-task).
+train_dataloader = dict(
+    num_workers=1, dataset=dict(data_root=dataroot))
 # val/ is read during training by the eval hook (model selection).
 val_dataloader = dict(
+    num_workers=1,
     dataset=dict(data_root=dataroot, test_mode=True, test_dir='val'))
 # test/ is the held-out split used by tools/test.py.
 test_dataloader = dict(
+    num_workers=1,
     dataset=dict(data_root=dataroot, test_mode=True, test_dir='test'))
 
 # optimizer
