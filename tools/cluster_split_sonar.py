@@ -38,6 +38,7 @@ import mmcv
 import numpy as np
 import torch
 import torchvision.transforms.functional as TF
+from mmengine.utils import track_iter_progress
 from torchvision import models
 
 from sonar_dataset_utils import build_dataset, index_by_stem, report, to_3ch
@@ -78,7 +79,7 @@ def embed_images(stems, sonar_paths, arch, batch, device):
     mean = [0.485, 0.456, 0.406]
     std = [0.229, 0.224, 0.225]
     feats = []
-    for i in mmcv.track_iter_progress(list(range(0, len(stems), batch))):
+    for i in track_iter_progress(list(range(0, len(stems), batch))):
         chunk = stems[i:i + batch]
         tensors = []
         for stem in chunk:
