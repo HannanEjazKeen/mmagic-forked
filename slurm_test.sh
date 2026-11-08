@@ -1,6 +1,6 @@
 #!/bin/bash
 
-#SBATCH --gres=shard:24    # Reserve 24 GB of VRAM for your job.
+#SBATCH --gres=shard:10    # Reserve 10 GB of VRAM for your job.
 
 source ~/miniconda3/etc/profile.d/conda.sh
 conda activate mmagic
