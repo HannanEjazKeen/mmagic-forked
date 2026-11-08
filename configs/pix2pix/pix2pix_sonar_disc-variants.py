@@ -78,7 +78,7 @@ model = dict(
     discriminator=_DISCRIMINATORS[DISCRIMINATOR],
     data_preprocessor=dict(data_keys=[f'img_{domain_a}', f'img_{domain_b}']))
 
-max_iters = 80000
+max_iters = 40000
 train_cfg = dict(max_iters=max_iters)
 
 # pix2pix LR schedule: hold lr constant for the first half, then linearly
