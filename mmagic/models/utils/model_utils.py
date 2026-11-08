@@ -111,6 +111,10 @@ def generation_init_weights(module, init_type='normal', init_gain=0.02):
             m (nn.Module): Module to be initialized.
         """
         classname = m.__class__.__name__
+        # Only Conv/Linear/BatchNorm2d set `init_info`; keep it defined for
+        # every other module type so update_init_info below never references
+        # an unbound variable.
+        init_info = None
         if hasattr(m, 'weight') and (classname.find('Conv') != -1
                                      or classname.find('Linear') != -1):
             if init_type == 'normal':
@@ -140,7 +144,7 @@ def generation_init_weights(module, init_type='normal', init_gain=0.02):
                          'by Norm initialization with mean=1, '
                          f'std={init_gain}')
 
-        if hasattr(m, '_params_init_info'):
+        if init_info is not None and hasattr(m, '_params_init_info'):
             update_init_info(module, init_info)
 
     module.apply(init_func)
