@@ -78,7 +78,20 @@ model = dict(
     discriminator=_DISCRIMINATORS[DISCRIMINATOR],
     data_preprocessor=dict(data_keys=[f'img_{domain_a}', f'img_{domain_b}']))
 
-train_cfg = dict(max_iters=80000)
+max_iters = 80000
+train_cfg = dict(max_iters=max_iters)
+
+# pix2pix LR schedule: hold lr constant for the first half, then linearly
+# decay to 0 over the second half (applied to both optimizers). This is the
+# standard recipe and stabilises the late iterations where loss plateaued.
+param_scheduler = dict(
+    type='LinearLrInterval',
+    interval=400,
+    by_epoch=False,
+    start_factor=2e-4,
+    end_factor=0,
+    begin=max_iters // 2,
+    end=max_iters)
 
 # keep each of the 8 runs in its own directory; the folder name carries the
 # dataset, discriminator and its receptive field (e.g. ..._patchgan70_rf70).
@@ -109,9 +122,11 @@ train_pipeline += [key_mapping, pack_input]
 val_pipeline += [key_mapping, pack_input]
 test_pipeline += [key_mapping, pack_input]
 
-# num_workers=1 to match a single-CPU Slurm allocation (--cpus-per-task).
+# batch_size=16 to use the reserved GPU (the bs=4 run used ~1.3 GB) and give
+# BatchNorm steadier statistics. num_workers=1 matches a single-CPU Slurm
+# allocation; data loading was not a bottleneck (data_time ~0.01s).
 train_dataloader = dict(
-    num_workers=1, dataset=dict(data_root=dataroot))
+    batch_size=16, num_workers=1, dataset=dict(data_root=dataroot))
 # val/ is read during training by the eval hook (model selection).
 val_dataloader = dict(
     num_workers=1,
